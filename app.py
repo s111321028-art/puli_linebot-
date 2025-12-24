@@ -76,7 +76,7 @@ def get_ai_response(user_input):
 
     try:
         response = gemini_client.models.generate_content(
-            model="gemini-1.5-flash-002",
+            model="gemini-3-flash",
             config={'system_instruction': system_prompt},
             contents=user_input
         )
@@ -117,6 +117,7 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
