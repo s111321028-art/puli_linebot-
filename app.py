@@ -10,8 +10,6 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 app = Flask(__name__)
 
 # LINE Bot
-LINE_CHANNEL_ACCESS_TOKEN = 'H4EPdiwguCKPdZM6V29MWPPbvDsJgPfExmg/SQPH0RvmXuvg6lx326jCoCI2YbKpKziwT6UcbmOdZvZkUemKqS4S04s5WFIgPNK+T7hrUAa0O7pQ3pL8mBbOPlDAnEq8Fjx7rZcZcDnRdbuUomGxUgdB04t89/1O/w1cDnyilFU='
-LINE_CHANNEL_SECRET = 'ef15cdcc08b065a165d8e90850620958'
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -177,4 +175,5 @@ def handle_message(event):
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
 
 iif __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=10000)
