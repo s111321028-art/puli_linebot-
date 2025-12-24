@@ -94,7 +94,10 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return 'OK'
-
+@app.route("/", methods=['GET'])
+def index():
+    return "Puli Food Bot is online!"
+    
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_msg = event.message.text
@@ -114,3 +117,4 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
