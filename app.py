@@ -1,5 +1,6 @@
 import zipfile
 import jieba
+import os
 import random
 from lxml import etree
 from flask import Flask, request, abort
@@ -178,6 +179,7 @@ if __name__ == "__main__":
     # 從環境變數讀取 PORT，若無則預設 5000
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
