@@ -7,7 +7,6 @@ import jieba
 from lxml import etree
 from flask import Flask, request, abort
 
-# LINE SDK v3
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
@@ -241,5 +240,6 @@ def send(event, messages):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
