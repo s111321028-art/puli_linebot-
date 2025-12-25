@@ -1,7 +1,7 @@
 import os
 import zipfile
 import random
-import jieba  # 修正：之前漏了匯入 jieba
+import jieba
 from lxml import etree
 from flask import Flask, request, abort
 
@@ -11,7 +11,8 @@ from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi, ReplyMessageRequest, TextMessage
 )
-from linebot.v3.webhooks import MessageEvent, TextMessageContent # 修正：v3 接收端應使用 TextMessageContent
+from linebot.v3.webhooks import MessageEvent, TextMessageContent 
+from linebot.v3.messaging import QuickReply, QuickReplyItem, MessageAction
 
 app = Flask(__name__)
 
@@ -30,6 +31,7 @@ def load_food_data(file_path):
             print(f"❌ 找不到檔案: {file_path}")
             return {}
 
+        # 讀取 KML 內容
         if zipfile.is_zipfile(file_path):
             with zipfile.ZipFile(file_path, 'r') as z:
                 kml_content = z.read('doc.kml')
@@ -40,6 +42,7 @@ def load_food_data(file_path):
         parser = etree.XMLParser(recover=True)
         root = etree.fromstring(kml_content, parser=parser)
         
+        # 尋找所有資料夾（分類）
         folders = root.xpath(".//*[local-name()='Folder']")
         
         if folders:
@@ -52,14 +55,28 @@ def load_food_data(file_path):
                 for p in p_in_folder:
                     name = p.xpath("./*[local-name()='name']/text()")
                     desc = p.xpath("./*[local-name()='description']/text()")
-                    if name:
-                        stores.append({
-                            "name": str(name[0]),
-                            "description": str(desc[0]) if desc else "埔里在地美食"
-                        })
+                    coords = p.xpath(".//*[local-name()='coordinates']/text()")
+                    
+                    store_info = {
+                        "name": str(name[0]) if name else "未知名稱",
+                        "description": str(desc[0]) if desc else "埔里在地美食",
+                        "lat": None,
+                        "lng": None
+                    }
+                    
+                    if coords:
+                        # KML 格式: lng,lat,alt
+                        parts = coords[0].strip().split(',')
+                        if len(parts) >= 2:
+                            store_info['lng'] = parts[0]
+                            store_info['lat'] = parts[1]
+                            
+                    stores.append(store_info)
+                
                 if stores:
                     food_db[cat_name] = stores
         else:
+            # 若無資料夾結構，抓取所有 Placemark
             placemarks = root.xpath(".//*[local-name()='Placemark']")
             all_stores = []
             for p in placemarks:
@@ -78,7 +95,7 @@ def load_food_data(file_path):
         print(f"❌ 讀取失敗: {e}")
         return {}
 
-# 預先載入
+# 預先載入資料
 FOOD_DATABASE = load_food_data('埔里吃什麼.kml')
 
 def update_jieba_dict(food_db):
@@ -90,6 +107,24 @@ def update_jieba_dict(food_db):
 
 if FOOD_DATABASE:
     update_jieba_dict(FOOD_DATABASE)
+
+def send_welcome_menu(reply_token):
+    """傳送快速選單"""
+    categories = list(FOOD_DATABASE.keys()) 
+    # LINE Quick Reply 最多支援 13 個按鈕
+    quick_replies = [QuickReplyItem(action=MessageAction(label=c, text=c)) for c in categories[:13]]
+    
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
+        line_bot_api.reply_message(
+            ReplyMessageRequest(
+                reply_token=reply_token,
+                messages=[TextMessage(
+                    text="想吃哪一類的埔里美食呢？或是直接輸入店名也可以喔！",
+                    quick_reply=QuickReply(items=quick_replies)
+                )]
+            )
+        )
 
 # --- 3. Webhook 路由 ---
 @app.route("/callback", methods=['POST'])
@@ -104,40 +139,37 @@ def callback():
 
 @app.route("/", methods=['GET'])
 def index():
-    return "Puli Food Bot (Local DB Mode) is running!"
+    return "Puli Food Bot is running!"
 
-# 修正：v3 的 message 類型應為 TextMessageContent
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_msg = event.message.text.strip().lower()
     words = list(jieba.cut(user_msg))
     
-    found_category = None
-    found_store = None
     reply_text = ""
 
-    # --- 邏輯判斷 ---
-    if any(kw in words for kw in ["hello", "你好", "嗨", "hi"]):
+    # 1. 關鍵字判斷：招呼語
+    if any(kw in words for kw in ["hello", "你好", "嗨", "hi", "開始", "選單"]):
+        send_welcome_menu(event.reply_token)
+        return
+
+    # 2. 關鍵字判斷：飢餓/推薦 (觸發分類提示)
+    if any(kw in user_msg for kw in ["餓", "吃", "喝", "隨便", "推薦"]):
         categories = "、".join(FOOD_DATABASE.keys())
-        reply_text = f"你好！我是埔里美食小助手 🤗\n目前有這些分類：\n\n{categories}\n\n你想吃哪一類？"
+        reply_text = f"看到你說「{user_msg}」，肚子餓了嗎？😋\n目前有這些分類：\n\n{categories}\n\n你想吃哪一類？"
 
-    elif any(kw in user_msg for kw in ["餓", "吃", "喝", "隨便", "推薦"]):
-        for category in FOOD_DATABASE.keys():
-            if category in user_msg:
-                found_category = category
-                break
-        if not found_category:
-            categories = "、".join(FOOD_DATABASE.keys())
-            reply_text = f"看到你說「{user_msg}」，肚子餓了嗎？😋\n試試輸入以下分類：\n\n{categories}"
-
+    # 3. 搜尋邏輯 (分類或店家)
     if not reply_text:
-        # 搜尋分類
+        found_category = None
+        found_store = None
+
+        # 先搜尋分類
         for category in FOOD_DATABASE.keys():
             if user_msg in category.lower() or category.lower() in user_msg:
                 found_category = category
                 break
         
-        # 搜尋店家
+        # 若非分類，搜尋店家名
         if not found_category:
             for category_stores in FOOD_DATABASE.values():
                 for store in category_stores:
@@ -148,7 +180,7 @@ def handle_message(event):
 
         if found_category:
             stores = FOOD_DATABASE[found_category]
-            sample_size = min(len(stores), 5)
+            sample_size = min(len(stores), 6)
             random_stores = random.sample(stores, sample_size)
             reply_text = f"🔍 「{found_category}」推薦清單：\n"
             for s in random_stores:
@@ -156,10 +188,13 @@ def handle_message(event):
             reply_text += "\n可以直接輸入店名看詳細描述喔！"
         elif found_store:
             reply_text = f"🏠 店名：{found_store['name']}\n📝 描述：{found_store['description']}"
+            if found_store.get('lat') and found_store.get('lng'):
+                # 附帶 Google Maps 連結
+                reply_text += f"\n🗺️ 地圖：https://www.google.com/maps?q={found_store['lat']},{found_store['lng']}"
         else:
             reply_text = f"抱歉，找不到關於「{user_msg}」的資訊。試試輸入「你好」看看分類清單！"
 
-    # 修正：LINE SDK v3 回覆訊息的正確語法
+    # 回覆訊息
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(
