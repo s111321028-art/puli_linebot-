@@ -1,12 +1,10 @@
 import os
 import zipfile
 import random
-import pandas as pd
 from lxml import etree
 from flask import Flask, request, abort
 
-# Google AI 與 LINE SDK v3 匯入
-from google import genai
+# 僅保留 LINE SDK 匯入，刪除 Google AI 相關
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
@@ -16,19 +14,21 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 app = Flask(__name__)
 
-# --- 1. 配置區 (從環境變數讀取) ---
+# --- 1. 配置區 ---
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# --- 2. 資料庫讀取 (保留你的 KML 解析邏輯) ---
+# --- 2. 資料庫讀取 (維持原樣) ---
 def load_food_data(file_path):
-    food_list = [] # 為了給 LLM 更好讀，改用清單格式
+    food_list = []
     try:
+        if not os.path.exists(file_path):
+            print(f"❌ 找不到檔案: {file_path}")
+            return []
+            
         if zipfile.is_zipfile(file_path):
             with zipfile.ZipFile(file_path, 'r') as z:
                 kml_content = z.read('doc.kml')
@@ -48,41 +48,32 @@ def load_food_data(file_path):
                     "name": str(name[0]),
                     "description": str(desc[0]) if desc else "埔里在地美食"
                 })
+        print(f"✅ 成功載入 {len(food_list)} 筆美食資料")
         return food_list
     except Exception as e:
         print(f"❌ 讀取失敗: {e}")
         return []
 
-# 啟動時讀取資料
 FOOD_KNOWLEDGE = load_food_data('埔里吃什麼.kml')
 
-# --- 3. 核心邏輯：檢索與生成 (RAG) ---
-def get_ai_response(user_input):
-    # 從資料庫篩選相關店家 (避免 Prompt 過長)
-    # 資工系小撇步：這裡做簡單的關鍵字篩選，其餘交給 AI 判斷
-    related_stores = [f"店名:{f['name']}, 介紹:{f['description']}" for f in FOOD_KNOWLEDGE if any(k in f['name'] or k in f['description'] for k in user_input)]
+# --- 3. 核心邏輯：資料庫檢索 (代替 AI) ---
+def get_db_response(user_input):
+    # 1. 搜尋邏輯：檢查使用者輸入是否包含在店名或介紹中
+    results = [f"🍴 {f['name']}\n📝 {f['description']}" for f in FOOD_KNOWLEDGE if user_input in f['name'] or user_input in f['description']]
     
-    # 限制給 AI 的知識量 (避免超過 Token 限制)
-    context = "\n".join(related_stores[:10]) if related_stores else "請根據你對埔里的了解來回答。"
-
-    system_prompt = f"""
-    你是一位埔里美食專家。請參考以下【專屬美食資料庫】來回答使用者。
-    如果資料庫有相關店家，請優先推薦；如果沒有，請用親切的語氣給予一般建議。
-    回答請簡短有力，並加上適合的表情符號。
-    
-    【專屬美食資料庫】：
-    {context}
-    """
-
-    try:
-        response = gemini_client.models.generate_content(
-            model="gemini-2.0-flash",
-            config={'system_instruction': system_prompt},
-            contents=user_input
-        )
-        return response.text
-    except Exception as e:
-        return f"我的大腦打結了... (錯誤原因: {str(e)})"
+    if results:
+        # 如果找到太多筆，只取前 3 筆避免訊息過長
+        count = len(results)
+        reply = f"🔍 為您找到 {count} 筆相關美食：\n\n" + "\n\n---\n\n".join(results[:3])
+        if count > 3:
+            reply += "\n\n...(還有更多結果，請縮小關鍵字範圍)"
+        return reply
+    else:
+        # 2. 沒找到時的 fallback：隨機推薦一筆
+        random_store = random.choice(FOOD_KNOWLEDGE)
+        return (f"找不到關鍵字「{user_input}」，不然試試這家：\n\n"
+                f"🎲 隨機推薦：{random_store['name']}\n"
+                f"📝 介紹：{random_store['description']}")
 
 # --- 4. Webhook 路由 ---
 @app.route("/callback", methods=['POST'])
@@ -94,16 +85,17 @@ def callback():
     except InvalidSignatureError:
         abort(400)
     return 'OK'
+
 @app.route("/", methods=['GET'])
 def index():
-    return "Puli Food Bot is online!"
-    
+    return f"Puli Food Bot (DB Mode) is online! Total: {len(FOOD_KNOWLEDGE)} stores."
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_msg = event.message.text
     
-    # 直接呼叫 AI 生成回覆
-    reply_text = get_ai_response(user_msg)
+    # 直接從資料庫獲取回覆，不再呼叫 Gemini
+    reply_text = get_db_response(user_msg)
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
@@ -117,8 +109,3 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-
-
-
-
