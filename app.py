@@ -11,52 +11,55 @@ from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
-    Configuration, ApiClient, MessagingApi,
-    ReplyMessageRequest, TextMessage,
-    QuickReply, QuickReplyItem, MessageAction,
-    FlexMessage
+    Configuration, ApiClient, MessagingApi, ReplyMessageRequest, 
+    TextMessage, FlexMessage, QuickReply, QuickReplyItem, MessageAction,
+    # 引入模型以確保 Flex 結構正確
+    CarouselContainer, BubbleContainer, BoxComponent, TextComponent, 
+    ButtonComponent, UriAction
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 # ================= 基本設定 =================
 app = Flask(__name__)
 
+# 從環境變數讀取 Token
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# ================= 使用者記憶與意圖 =================
+# 使用者記憶：記錄上次查詢的分類
 user_last_category = {}
 INTENT_RANDOM = ["隨便", "不知道", "吃什麼", "推薦", "幫我選"]
 
 # ================= 工具函式 =================
 def is_chinese(text):
-    """判斷是否包含中文字元"""
+    """判斷字串是否包含中文字元 """
     return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 def clean_html(text):
-    """清理 KML 中的 HTML 標籤與特殊符號"""
+    """移除 HTML 標籤並清理特殊字元 """
     if not text: return ""
     clean = re.sub(r'<[^>]+>', '', text)
     clean = clean.replace(' ', ' ').replace('&', '&')
     return clean.strip()
 
 def google_map_link(store_name, area="埔里"):
-    """產生 Google 地圖搜尋連結"""
+    """產生有效的 Google 地圖搜尋連結 """
     query = f"{area} {store_name}"
-    # 修正為標準搜尋網址格式
     return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}"
 
 # ================= 載入 KML 資料 =================
 def load_food_data(file_path):
+    """從 KML 檔案讀取分類與店家資訊 """
     food_db = {}
     if not os.path.exists(file_path):
-        print(f"❌ 找不到 KML: {file_path}")
+        print(f"❌ 找不到 KML 檔案: {file_path}")
         return {}
 
     try:
+        # 處理壓縮格式或純文字格式
         if zipfile.is_zipfile(file_path):
             with zipfile.ZipFile(file_path, 'r') as z:
                 kml_content = z.read('doc.kml')
@@ -65,6 +68,7 @@ def load_food_data(file_path):
                 kml_content = f.read()
 
         root = etree.fromstring(kml_content, etree.XMLParser(recover=True))
+        # 使用 local-name 處理 XML Namespace 問題
         folders = root.xpath(".//*[local-name()='Folder']")
 
         if folders:
@@ -75,11 +79,12 @@ def load_food_data(file_path):
                 stores = []
                 for p in folder.xpath(".//*[local-name()='Placemark']"):
                     name = p.xpath("./*[local-name()='name']/text()")
+                    # KML 中 description 可能不存在 
                     desc = p.xpath("./*[local-name()='description']/text()")
                     if name:
                         stores.append({
                             "name": str(name[0]),
-                            "description": str(desc[0]) if desc else "埔里在地美食"
+                            "description": str(desc[0]) if desc else "這是一間位於埔里的在地美食推薦 ✨"
                         })
                 if stores:
                     food_db[cat_name] = stores
@@ -88,73 +93,53 @@ def load_food_data(file_path):
         print(f"❌ KML 解析失敗: {e}")
         return {}
 
-# 預載入資料庫
+# 預先載入資料庫
 FOOD_DATABASE = load_food_data("埔里吃什麼.kml")
 
-# 更新 jieba 詞庫
+# 啟動時更新 jieba 自定義詞庫
 if FOOD_DATABASE:
     for cat, stores in FOOD_DATABASE.items():
         jieba.add_word(cat)
         for s in stores:
             jieba.add_word(s["name"])
 
-# ================= 訊息組件 =================
+# ================= Flex 組件建立 (模型版) =================
+def create_store_bubble(store):
+    """使用 BubbleContainer 模型建構單一店家卡片，解決 400 錯誤 """
+    name = store.get("name", "未知店家")
+    desc = clean_html(store.get("description"))
+    if not desc: desc = "埔里在地美食，歡迎品嚐！"
+
+    return BubbleContainer(
+        size="micro",
+        body=BoxComponent(
+            layout="vertical",
+            contents=[
+                TextComponent(text=name, weight="bold", size="lg", wrap=True),
+                TextComponent(text=desc, wrap=True, size="xs", color="#8c8c8c", max_lines=3)
+            ]
+        ),
+        footer=BoxComponent(
+            layout="vertical",
+            contents=[
+                ButtonComponent(
+                    style="primary",
+                    color="#4285F4",
+                    action=UriAction(label="查看地圖", uri=google_map_link(name))
+                )
+            ]
+        )
+    )
+
 def category_quick_reply():
-    """產生全分類快速選單"""
+    """產生分類選單 (LINE 限制最多 13 個) """
     items = [
         QuickReplyItem(action=MessageAction(label=cat[:20], text=cat))
         for cat in FOOD_DATABASE.keys()
     ]
-    return QuickReply(items=items[:13]) # LINE 限制最多 13 個
+    return QuickReply(items=items[:13])
 
-def store_flex(store):
-    """產生單一店家的 Flex Bubble 結構"""
-    name = store.get("name", "未知店名")
-    desc = clean_html(store.get("description", "埔里在地美食"))
-    
-    return {
-        "type": "bubble",
-        "size": "micro",
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "text",
-                    "text": name,
-                    "weight": "bold",
-                    "size": "lg",
-                    "wrap": True
-                },
-                {
-                    "type": "text",
-                    "text": desc,
-                    "wrap": True,
-                    "size": "xs",
-                    "color": "#8c8c8c",
-                    "maxLines": 3
-                }
-            ]
-        },
-        "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-                {
-                    "type": "button",
-                    "style": "primary",
-                    "color": "#4285F4",
-                    "action": {
-                        "type": "uri",
-                        "label": "查看地圖",
-                        "uri": google_map_link(name)
-                    }
-                }
-            ]
-        }
-    }
-
-# ================= Webhook 路由 =================
+# ================= Webhook 與發送函式 =================
 @app.route("/callback", methods=["POST"])
 def callback():
     signature = request.headers.get("X-Line-Signature")
@@ -167,91 +152,10 @@ def callback():
 
 @app.route("/")
 def index():
-    return "Puli Food Bot is running!"
-
-# ================= 訊息處理邏輯 =================
-@handler.add(MessageEvent, message=TextMessageContent)
-def handle_message(event):
-    user_id = event.source.user_id
-    raw = event.message.text.strip()
-    
-    # 執行斷詞
-    tokens = jieba.lcut(raw) if is_chinese(raw) else raw.lower().split()
-
-    found_category = None
-    found_store = None
-
-    # 1. 招呼語判斷 (修正冒號錯誤)
-    keywords = ["你好", "嗨", "hello", "hi", "餓" ,"美食","food","hungry"]
-    if any(w in raw.lower() for w in keywords):
-        reply = TextMessage(
-            text="你好！我是埔里美食小助手 🍜\n想吃哪一類？",
-            quick_reply=category_quick_reply()
-        )
-        send_reply(event, [reply])
-        return
-
-    # 2. 隨機推薦
-    if any(w in raw for w in INTENT_RANDOM):
-        all_stores = [s for stores in FOOD_DATABASE.values() for s in stores]
-        if all_stores:
-            found_store = random.choice(all_stores)
-
-    # 3. 「再推薦一次」記憶功能
-    if "再" in raw and user_id in user_last_category:
-        found_category = user_last_category[user_id]
-
-    # 4. 分類搜尋 (精確匹配斷詞)
-    if not found_store and not found_category:
-        for cat in FOOD_DATABASE:
-            if any(w == cat or w in cat for w in tokens):
-                found_category = cat
-                user_last_category[user_id] = cat
-                break
-
-    # 5. 店名模糊搜尋
-    if not found_store and not found_category:
-        for stores in FOOD_DATABASE.values():
-            for s in stores:
-                if any(w in s["name"] for w in tokens if len(w) > 1):
-                    found_store = s
-                    break
-            if found_store: break
-
-    # -------- 組合回覆內容 --------
-    if found_category:
-        cat_stores = FOOD_DATABASE.get(found_category, [])
-        if cat_stores:
-            # 隨機挑選 5 間，並建立 Carousel 結構
-            selected = random.sample(cat_stores, min(5, len(cat_stores)))
-            bubbles = [store_flex(s) for s in selected]
-            
-            # 封裝 FlexMessage 確保 contents 屬性被指定 (修正 400 錯誤)
-            flex_msg = FlexMessage(
-                alt_text=f"{found_category} 推薦清單",
-                contents={
-                    "type": "carousel",
-                    "contents": bubbles
-                }
-            )
-            send_reply(event, [flex_msg])
-            return
-
-    if found_store:
-        send_reply(event, [FlexMessage(
-            alt_text=found_store["name"],
-            contents=store_flex(found_store)
-        )])
-        return
-
-    # 兜底回覆
-    send_reply(event, [TextMessage(
-        text=f"抱歉，我找不到關於「{raw}」的資訊 😅\n試試看下方的分類吧！",
-        quick_reply=category_quick_reply()
-    )])
+    return "Puli Food Bot is active!"
 
 def send_reply(event, messages):
-    """統一發送回覆的輔助函式"""
+    """調用 Messaging API 發送回覆"""
     with ApiClient(configuration) as api:
         line_bot_api = MessagingApi(api)
         line_bot_api.reply_message(
@@ -261,7 +165,84 @@ def send_reply(event, messages):
             )
         )
 
-# ================= 程式啟動 =================
+# ================= 核心處理邏輯 =================
+@handler.add(MessageEvent, message=TextMessageContent)
+def handle_message(event):
+    user_id = event.source.user_id
+    raw_msg = event.message.text.strip()
+    
+    # 分詞處理 
+    tokens = jieba.lcut(raw_msg.lower()) if is_chinese(raw_msg) else raw_msg.lower().split()
+
+    found_category = None
+    found_store = None
+
+    # 1. 招呼語處理
+    keywords = ["你好", "嗨", "hello", "hi", "餓", "美食"]
+    if any(k in raw_msg.lower() for k in keywords):
+        send_reply(event, [TextMessage(
+            text="你好！我是埔里美食小助手 🍜\n想吃哪一類？",
+            quick_reply=category_quick_reply()
+        )])
+        return
+
+    # 2. 隨機推薦邏輯
+    if any(w in raw_msg for w in INTENT_RANDOM):
+        all_stores = [s for stores in FOOD_DATABASE.values() for s in stores]
+        if all_stores:
+            found_store = random.choice(all_stores)
+
+    # 3. 記憶功能：再次推薦
+    if "再" in raw_msg and user_id in user_last_category:
+        found_category = user_last_category[user_id]
+
+    # 4. 分類搜尋
+    if not found_store and not found_category:
+        for cat in FOOD_DATABASE:
+            if any(w == cat or w in cat for w in tokens):
+                found_category = cat
+                user_last_category[user_id] = cat
+                break
+
+    # 5. 店名搜尋
+    if not found_store and not found_category:
+        for stores in FOOD_DATABASE.values():
+            for s in stores:
+                if any(w in s["name"] for w in tokens if len(w) > 1):
+                    found_store = s
+                    break
+            if found_store: break
+
+    # -------- 產生回覆訊息 --------
+    if found_category:
+        stores = FOOD_DATABASE.get(found_category, [])
+        if stores:
+            selected = random.sample(stores, min(5, len(stores)))
+            # 建立 Bubble 模型列表
+            bubbles = [create_store_bubble(s) for s in selected]
+            # 使用 CarouselContainer 封裝，解決 contents must be specified 錯誤 
+            carousel = CarouselContainer(contents=bubbles)
+            
+            try:
+                flex_msg = FlexMessage(
+                    alt_text=f"{found_category} 推薦清單",
+                    contents=carousel
+                )
+                send_reply(event, [flex_msg])
+                return
+            except Exception as e:
+                print(f"Flex Build Error: {e}")
+
+    if found_store:
+        bubble = create_store_bubble(found_store)
+        send_reply(event, [FlexMessage(alt_text=found_store["name"], contents=bubble)])
+        return
+
+    # 找不到結果時
+    send_reply(event, [TextMessage(
+        text=f"找不到「{raw_msg}」的相關美食 😅\n可以試試看這些分類：",
+        quick_reply=category_quick_reply()
+    )])
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
