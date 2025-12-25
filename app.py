@@ -7,22 +7,19 @@ import jieba
 from lxml import etree
 from flask import Flask, request, abort
 
-# LINE SDK v3 匯入
+# LINE SDK v3 基礎匯入
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi, ReplyMessageRequest, 
-    TextMessage, FlexMessage, QuickReply, QuickReplyItem, MessageAction,
-    # 引入模型以確保 Flex 結構正確
-    CarouselContainer, BubbleContainer, BoxComponent, TextComponent, 
-    ButtonComponent, UriAction
+    TextMessage, FlexMessage, QuickReply, QuickReplyItem, MessageAction
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 
 # ================= 基本設定 =================
 app = Flask(__name__)
 
-# 從環境變數讀取 Token
+# 從環境變數讀取 Token (Render 後台設定)
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 
@@ -35,31 +32,28 @@ INTENT_RANDOM = ["隨便", "不知道", "吃什麼", "推薦", "幫我選"]
 
 # ================= 工具函式 =================
 def is_chinese(text):
-    """判斷字串是否包含中文字元 """
+    """判斷字串是否包含中文字元"""
     return bool(re.search(r'[\u4e00-\u9fff]', text))
 
 def clean_html(text):
-    """移除 HTML 標籤並清理特殊字元 """
+    """移除 HTML 標籤並清理特殊字元，避免 Flex 報錯"""
     if not text: return ""
     clean = re.sub(r'<[^>]+>', '', text)
-    clean = clean.replace(' ', ' ').replace('&', '&')
+    clean = clean.replace(' ', ' ').replace('&', '&')
     return clean.strip()
 
 def google_map_link(store_name, area="埔里"):
-    """產生有效的 Google 地圖搜尋連結 """
+    """產生標準 Google 地圖搜尋連結"""
     query = f"{area} {store_name}"
     return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}"
 
 # ================= 載入 KML 資料 =================
 def load_food_data(file_path):
-    """從 KML 檔案讀取分類與店家資訊 """
     food_db = {}
     if not os.path.exists(file_path):
-        print(f"❌ 找不到 KML 檔案: {file_path}")
+        print(f"❌ 找不到 KML: {file_path}")
         return {}
-
     try:
-        # 處理壓縮格式或純文字格式
         if zipfile.is_zipfile(file_path):
             with zipfile.ZipFile(file_path, 'r') as z:
                 kml_content = z.read('doc.kml')
@@ -68,78 +62,83 @@ def load_food_data(file_path):
                 kml_content = f.read()
 
         root = etree.fromstring(kml_content, etree.XMLParser(recover=True))
-        # 使用 local-name 處理 XML Namespace 問題
         folders = root.xpath(".//*[local-name()='Folder']")
 
         if folders:
             for folder in folders:
                 cat_name_list = folder.xpath("./*[local-name()='name']/text()")
-                cat_name = cat_name_list[0] if cat_name_list else "其他"
-                
+                cat = cat_name_list[0] if cat_name_list else "其他"
                 stores = []
                 for p in folder.xpath(".//*[local-name()='Placemark']"):
                     name = p.xpath("./*[local-name()='name']/text()")
-                    # KML 中 description 可能不存在 
                     desc = p.xpath("./*[local-name()='description']/text()")
                     if name:
                         stores.append({
                             "name": str(name[0]),
-                            "description": str(desc[0]) if desc else "這是一間位於埔里的在地美食推薦 ✨"
+                            "description": str(desc[0]) if desc else "埔里在地美食，歡迎品嚐！"
                         })
                 if stores:
-                    food_db[cat_name] = stores
+                    food_db[cat] = stores
         return food_db
     except Exception as e:
-        print(f"❌ KML 解析失敗: {e}")
+        print(f"❌ 解析失敗: {e}")
         return {}
 
-# 預先載入資料庫
+# 預載入資料
 FOOD_DATABASE = load_food_data("埔里吃什麼.kml")
 
-# 啟動時更新 jieba 自定義詞庫
+# 啟動時更新 jieba 詞庫
 if FOOD_DATABASE:
     for cat, stores in FOOD_DATABASE.items():
         jieba.add_word(cat)
         for s in stores:
             jieba.add_word(s["name"])
 
-# ================= Flex 組件建立 (模型版) =================
-def create_store_bubble(store):
-    """使用 BubbleContainer 模型建構單一店家卡片，解決 400 錯誤 """
+# ================= Flex 字典產生器 =================
+def store_flex_dict(store):
+    """回傳 Bubble 字典結構，確保 desc 絕不為空"""
     name = store.get("name", "未知店家")
     desc = clean_html(store.get("description"))
-    if not desc: desc = "埔里在地美食，歡迎品嚐！"
+    if not desc: desc = "這是一間位於埔里的在地美食推薦 ✨"
 
-    return BubbleContainer(
-        size="micro",
-        body=BoxComponent(
-            layout="vertical",
-            contents=[
-                TextComponent(text=name, weight="bold", size="lg", wrap=True),
-                TextComponent(text=desc, wrap=True, size="xs", color="#8c8c8c", max_lines=3)
+    return {
+        "type": "bubble",
+        "size": "micro",
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {"type": "text", "text": name, "weight": "bold", "size": "lg", "wrap": True},
+                {"type": "text", "text": desc, "wrap": True, "size": "xs", "color": "#8c8c8c", "maxLines": 3}
             ]
-        ),
-        footer=BoxComponent(
-            layout="vertical",
-            contents=[
-                ButtonComponent(
-                    style="primary",
-                    color="#4285F4",
-                    action=UriAction(label="查看地圖", uri=google_map_link(name))
-                )
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#4285F4",
+                    "action": {
+                        "type": "uri",
+                        "label": "查看地圖",
+                        "uri": google_map_link(name)
+                    }
+                }
             ]
-        )
-    )
+        }
+    }
 
 def category_quick_reply():
-    """產生分類選單 (LINE 限制最多 13 個) """
+    """產生分類快速選單"""
     items = [
         QuickReplyItem(action=MessageAction(label=cat[:20], text=cat))
         for cat in FOOD_DATABASE.keys()
     ]
     return QuickReply(items=items[:13])
 
-# ================= Webhook 與發送函式 =================
+# ================= Webhook 與發送 =================
 @app.route("/callback", methods=["POST"])
 def callback():
     signature = request.headers.get("X-Line-Signature")
@@ -155,7 +154,6 @@ def index():
     return "Puli Food Bot is active!"
 
 def send_reply(event, messages):
-    """調用 Messaging API 發送回覆"""
     with ApiClient(configuration) as api:
         line_bot_api = MessagingApi(api)
         line_bot_api.reply_message(
@@ -165,19 +163,19 @@ def send_reply(event, messages):
             )
         )
 
-# ================= 核心處理邏輯 =================
+# ================= 訊息處理邏輯 =================
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_id = event.source.user_id
     raw_msg = event.message.text.strip()
     
-    # 分詞處理 
+    # 執行斷詞
     tokens = jieba.lcut(raw_msg.lower()) if is_chinese(raw_msg) else raw_msg.lower().split()
 
     found_category = None
     found_store = None
 
-    # 1. 招呼語處理
+    # 1. 招呼語 (修正冒號錯誤)
     keywords = ["你好", "嗨", "hello", "hi", "餓", "美食"]
     if any(k in raw_msg.lower() for k in keywords):
         send_reply(event, [TextMessage(
@@ -186,13 +184,13 @@ def handle_message(event):
         )])
         return
 
-    # 2. 隨機推薦邏輯
+    # 2. 隨機推薦
     if any(w in raw_msg for w in INTENT_RANDOM):
         all_stores = [s for stores in FOOD_DATABASE.values() for s in stores]
         if all_stores:
             found_store = random.choice(all_stores)
 
-    # 3. 記憶功能：再次推薦
+    # 3. 再推薦一次
     if "再" in raw_msg and user_id in user_last_category:
         found_category = user_last_category[user_id]
 
@@ -213,36 +211,39 @@ def handle_message(event):
                     break
             if found_store: break
 
-    # -------- 產生回覆訊息 --------
+    # -------- 回覆內容組合 --------
     if found_category:
         stores = FOOD_DATABASE.get(found_category, [])
         if stores:
             selected = random.sample(stores, min(5, len(stores)))
-            # 建立 Bubble 模型列表
-            bubbles = [create_store_bubble(s) for s in selected]
-            # 使用 CarouselContainer 封裝，解決 contents must be specified 錯誤 
-            carousel = CarouselContainer(contents=bubbles)
+            bubbles = [store_flex_dict(s) for s in selected]
             
-            try:
-                flex_msg = FlexMessage(
-                    alt_text=f"{found_category} 推薦清單",
-                    contents=carousel
-                )
-                send_reply(event, [flex_msg])
-                return
-            except Exception as e:
-                print(f"Flex Build Error: {e}")
+            # 使用 from_dict 徹底解決 400 錯誤與 ImportError
+            flex_msg = FlexMessage.from_dict({
+                "altText": f"{found_category} 推薦清單",
+                "contents": {
+                    "type": "carousel",
+                    "contents": bubbles
+                }
+            })
+            send_reply(event, [flex_msg])
+            return
 
     if found_store:
-        bubble = create_store_bubble(found_store)
-        send_reply(event, [FlexMessage(alt_text=found_store["name"], contents=bubble)])
+        bubble = store_flex_dict(found_store)
+        flex_msg = FlexMessage.from_dict({
+            "altText": found_store["name"],
+            "contents": bubble
+        })
+        send_reply(event, [flex_msg])
         return
 
-    # 找不到結果時
+    # 沒找到結果
     send_reply(event, [TextMessage(
         text=f"找不到「{raw_msg}」的相關美食 😅\n可以試試看這些分類：",
         quick_reply=category_quick_reply()
     )])
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
