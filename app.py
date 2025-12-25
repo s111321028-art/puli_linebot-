@@ -109,9 +109,7 @@ if FOOD_DATABASE:
     update_jieba_dict(FOOD_DATABASE)
 
 def send_welcome_menu(reply_token):
-    """傳送快速選單"""
     categories = list(FOOD_DATABASE.keys()) 
-    # LINE Quick Reply 最多支援 13 個按鈕
     quick_replies = [QuickReplyItem(action=MessageAction(label=c, text=c)) for c in categories[:13]]
     
     with ApiClient(configuration) as api_client:
@@ -148,17 +146,12 @@ def handle_message(event):
     
     reply_text = ""
 
-    # 1. 關鍵字判斷：招呼語
-    if any(kw in words for kw in ["hello", "你好", "嗨", "hi", "開始", "選單"]):
+    # 招呼語
+    if any(kw in words for kw in ["hello", "你好", "嗨", "hi", "開始", "選單","餓", "吃", "喝", "隨便", "推薦"]):
         send_welcome_menu(event.reply_token)
         return
 
-    # 2. 關鍵字判斷：飢餓/推薦 (觸發分類提示)
-    if any(kw in user_msg for kw in ["餓", "吃", "喝", "隨便", "推薦"]):
-        categories = "、".join(FOOD_DATABASE.keys())
-        reply_text = f"看到你說「{user_msg}」，肚子餓了嗎？😋\n目前有這些分類：\n\n{categories}\n\n你想吃哪一類？"
-
-    # 3. 搜尋邏輯 (分類或店家)
+    # 搜尋邏輯 (分類或店家)
     if not reply_text:
         found_category = None
         found_store = None
@@ -207,3 +200,4 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
