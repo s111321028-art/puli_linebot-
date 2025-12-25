@@ -92,23 +92,28 @@ def category_quick_reply():
     ])
 
 def store_flex(store):
+    # 確保名稱和描述絕對不會是 None 或空值
+    name = store.get("name", "未知店名")
+    desc = clean_html(store.get("description", "暫無介紹"))
+    if not desc: desc = "埔里在地美食"
+
     return {
         "type": "bubble",
-        "size": "micro", # 建議微調大小，讓 Carousel 在手機上更好滑
+        "size": "micro",
         "body": {
             "type": "box",
             "layout": "vertical",
             "contents": [
                 {
                     "type": "text",
-                    "text": store["name"],
+                    "text": name,
                     "weight": "bold",
                     "size": "lg",
                     "wrap": True
                 },
                 {
                     "type": "text",
-                    "text": clean_html(store["description"]),
+                    "text": desc,
                     "wrap": True,
                     "size": "xs",
                     "color": "#8c8c8c",
@@ -122,12 +127,12 @@ def store_flex(store):
             "contents": [
                 {
                     "type": "button",
-                    "style": "primary", # 改成實心按鈕比較好點選
+                    "style": "primary",
                     "color": "#4285F4",
                     "action": {
                         "type": "uri",
                         "label": "查看地圖",
-                        "uri": google_map_link(store["name"])
+                        "uri": google_map_link(name)
                     }
                 }
             ]
@@ -192,15 +197,25 @@ def handle_message(event):
 
     # -------- 回覆 --------
     if found_category:
-        stores = random.sample(
-            FOOD_DATABASE[found_category],
-            min(5, len(FOOD_DATABASE[found_category]))
-        )
+        category_stores = FOOD_DATABASE.get(found_category, [])
+        if not category_stores:
+            send(event, [TextMessage(text=f"抱歉，{found_category} 目前沒有店家資料 😅")])
+            return
+
+        # 抽樣並建立 bubbles
+        stores = random.sample(category_stores, min(5, len(category_stores)))
         bubbles = [store_flex(s) for s in stores]
-        send(event, [FlexMessage(
-            alt_text=f"{found_category} 推薦",
-            contents={"type": "carousel", "contents": bubbles}
-        )])
+        
+        # 確保 FlexMessage 結構完整
+        try:
+            flex_msg = FlexMessage(
+                alt_text=f"{found_category} 推薦清單",
+                contents={"type": "carousel", "contents": bubbles}
+            )
+            send(event, [flex_msg])
+        except Exception as e:
+            print(f"Flex Error: {e}")
+            send(event, [TextMessage(text="傳送圖卡時發生錯誤，請聯絡管理員。")])
         return
 
     if found_store:
@@ -226,4 +241,5 @@ def send(event, messages):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
