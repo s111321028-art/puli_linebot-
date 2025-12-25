@@ -43,6 +43,10 @@
       <Placemark>
         <name>天慈素食</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <description><![CDATA[
+          <b>🌟 推薦菜色：</b>招牌炒麵、四物湯(豆皮超多)、素魯飯、綜合湯<br>
+          <b>🚩 店家特色：</b>埔里知名的連鎖平價素食，出餐速度極快，是當地人的日常銅板美食首選。
+        ]]></description>
         <Point>
           <coordinates>
             120.9630199,23.9673952,0
@@ -52,6 +56,10 @@
       <Placemark>
         <name>雪花素食</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <description><![CDATA[
+          <b>🌟 推薦菜色：</b>酥炸臭豆腐、香椿意麵、高麗菜捲、三色布丁豆花<br>
+          <b>🚩 店家特色：</b>埔里老字號！臭豆腐外酥內嫩是每桌必點。最特別的是吃完鹹食後，還可以點一碗懷舊的布丁豆花當點心。
+        ]]></description>
         <Point>
           <coordinates>
             120.970737,23.9628628,0
@@ -320,15 +328,6 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>三元素食</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9727111,23.9705724,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
         <name>首竹素塹－埔里店</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
@@ -364,18 +363,9 @@
           </coordinates>
         </Point>
       </Placemark>
-      <Placemark>
-        <name>紅鶴林素食中西餐館</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9624687,23.9660093,0
-          </coordinates>
-        </Point>
-      </Placemark>
     </Folder>
     <Folder>
-      <name>飯</name>
+      <name>飯類</name>
       <Placemark>
         <name>亞忠爌肉飯</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
