@@ -103,60 +103,68 @@ def callback():
 def index():
     return "Puli Food Bot (Local DB Mode) is running!"
 
-# 修正：v3 的 message 類型應為 TextMessageContent
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_msg = event.message.text.strip().lower()
-    words = list(jieba.cut(user_msg))
     
+    # 預設變數
     found_category = None
     found_store = None
     reply_text = ""
 
-    # --- 邏輯判斷 ---
-    if any(kw in words for kw in ["hello", "你好", "嗨", "hi"]):
+    # 1. 處理招呼語
+    if any(kw in user_msg for kw in ["hello", "你好", "嗨", "hi"]):
         categories = "、".join(FOOD_DATABASE.keys())
-        reply_text = f"你好！我是埔里美食小助手 🤗\n目前有這些分類：\n\n{categories}\n\n你想吃哪一類？"
+        reply_text = f"你好！我是埔里美食小助手 🤗\n目前的分類有：\n\n{categories}\n\n你想吃哪一類？"
 
-    elif any(kw in user_msg for kw in ["餓", "好吃", "在地", "美食", "推薦"]):
-        for category in FOOD_DATABASE.keys():
-            if category in user_msg:
-                found_category = category
-                break
-        if not found_category:
-            categories = "、".join(FOOD_DATABASE.keys())
-            reply_text = f"看到你說「{user_msg}」，肚子餓了嗎？😋\n試試輸入以下分類：\n\n{categories}"
-
+    # 2. 判斷是否為「分類」關鍵字（包含模糊比對）
     if not reply_text:
-        # 搜尋分類
         for category in FOOD_DATABASE.keys():
             if user_msg in category.lower() or category.lower() in user_msg:
                 found_category = category
                 break
+
+    # 3. 如果不是分類，則進行「全資料庫店名搜尋」
+    if not reply_text and not found_category:
+        for category_name, stores in FOOD_DATABASE.items():
+            for store in stores:
+                # 模糊搜尋：判斷使用者輸入是否在店名內
+                if user_msg in store['name'].lower():
+                    found_store = store
+                    break
+            if found_store: break
+
+    # --- 根據搜尋結果組合回覆訊息 ---
+    
+    if found_category:
+        # 使用者輸入的是分類 (例如：飯、素、餐廳)
+        stores = FOOD_DATABASE[found_category]
+        sample_size = min(len(stores), 5)
+        random_stores = random.sample(stores, sample_size)
         
-        # 搜尋店家
-        if not found_category:
-            for category_stores in FOOD_DATABASE.values():
-                for store in category_stores:
-                    if user_msg in store['name'].lower():
-                        found_store = store
-                        break
-                if found_store: break
+        reply_text = f"🔍 幫你從「{found_category}」挑選幾間：\n"
+        for s in random_stores:
+            reply_text += f"📍 {s['name']}\n"
+        reply_text += "\n可以直接輸入「完整店名」查看詳細介紹喔！"
 
-        if found_category:
-            stores = FOOD_DATABASE[found_category]
-            sample_size = min(len(stores), 5)
-            random_stores = random.sample(stores, sample_size)
-            reply_text = f"🔍 「{found_category}」推薦清單：\n"
-            for s in random_stores:
-                reply_text += f"📍 {s['name']}\n"
-            reply_text += "\n可以直接輸入店名看詳細描述喔！"
-        elif found_store:
-            reply_text = f"🏠 店名：{found_store['name']}\n📝 描述：{found_store['description']}"
-        else:
-            reply_text = f"抱歉，找不到關於「{user_msg}」的資訊。試試輸入「你好」看看分類清單！"
+    elif found_store:
+        # 使用者輸入的不是分類，但在資料庫中找到了店名
+        # 這裡加入你要求的「你是再說這個嗎」邏輯
+        name = found_store['name']
+        desc = found_store['description']
+        
+        # 處理 KML 中可能存在的 HTML 標籤（簡單清除或是保留）
+        # 如果你想讓 LINE 顯示更乾淨，可以用 .replace('<b>', '').replace('</b>', '')
+        clean_desc = desc.replace('<br>', '\n').replace('<b>', '').replace('</b>', '')
+        
+        reply_text = f"🧐 你是在說這一間嗎？\n\n🏠【{name}】\n{clean_desc}"
 
-    # 修正：LINE SDK v3 回覆訊息的正確語法
+    elif not reply_text:
+        # 都沒找到
+        categories = "、".join(FOOD_DATABASE.keys())
+        reply_text = f"抱歉，我找不到關於「{user_msg}」的店家或分類 😅\n\n試試看以下分類：\n{categories}"
+
+    # 送出訊息
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(
@@ -164,8 +172,9 @@ def handle_message(event):
                 reply_token=event.reply_token,
                 messages=[TextMessage(text=reply_text)]
             )
-        )
+        ))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
