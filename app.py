@@ -157,7 +157,7 @@ def handle_message(event):
     found_category = None
     found_store = None
 
-    if any(w in raw for w in ["你好", "嗨", "hello", "hi", "餓" ,"美食","food","hungry"])
+    if any(w in raw for w in ["你好", "嗨", "hello", "hi", "餓" ,"美食","food","hungry"]):
         reply = TextMessage(
             text="我是埔里美食小助手 🍜\n想吃哪一類？",
             quick_reply=category_quick_reply()
@@ -226,3 +226,4 @@ def send(event, messages):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
