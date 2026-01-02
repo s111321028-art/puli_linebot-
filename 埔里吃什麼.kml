@@ -41,12 +41,8 @@
     <Folder>
       <name>素</name>
       <Placemark>
-        <name>天慈素食</name>
+        <name>天天食蔬（原天慈素食）</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <description><![CDATA[
-          🌟 推薦菜色：招牌炒麵、四物湯(豆皮超多)、素魯飯、綜合湯
-          🚩 店家特色：埔里知名的連鎖平價素食，出餐速度極快，是當地人的日常銅板美食首選。
-        ]]></description>
         <Point>
           <coordinates>
             120.9630199,23.9673952,0
@@ -56,22 +52,9 @@
       <Placemark>
         <name>雪花素食</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <description><![CDATA[
-          🌟 推薦菜色：酥炸臭豆腐、香椿意麵、高麗菜捲、三色布丁豆花
-          🚩 店家特色：埔里老字號！臭豆腐外酥內嫩是每桌必點。最特別的是吃完鹹食後，還可以點一碗懷舊的布丁豆花當點心。
-        ]]></description>
         <Point>
           <coordinates>
             120.970737,23.9628628,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>東朋蔬食</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9690267,23.9615704,0
           </coordinates>
         </Point>
       </Placemark>
@@ -90,15 +73,6 @@
         <Point>
           <coordinates>
             120.94827,23.9668429,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>蓮園素食</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9759941,23.9708988,0
           </coordinates>
         </Point>
       </Placemark>
@@ -125,16 +99,7 @@
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
-            120.9717471,23.9610532,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>結夏蔬食/民宿</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.970848,23.9625499,0
+            120.9717471,23.9610532,0 
           </coordinates>
         </Point>
       </Placemark>
@@ -148,20 +113,11 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>鳳城健康蔬食餐廳</name>
+        <name>鳳琴蔬食小點</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
-            120.964842,23.984118,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>越南蔬食河粉</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.963265,23.9719925,0
+            120.96544784868055,23.971671165444455,0 
           </coordinates>
         </Point>
       </Placemark>
@@ -175,16 +131,7 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>平雲山都</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.947712,24.0086039,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>素得福素食包子</name>
+        <name>素得福素食包子饅頭</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
@@ -220,7 +167,7 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>蓮心圓素食</name>
+        <name>蓮心圓素食海苔飯捲</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
@@ -234,15 +181,6 @@
         <Point>
           <coordinates>
             120.9646447,23.959406,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>二姐的店 養生蔬食</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9760946,23.9709895,0
           </coordinates>
         </Point>
       </Placemark>
@@ -274,38 +212,11 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>義蔬蔬食坊</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9591235,23.9704781,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>如軒齋素食早餐外帶</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9637224,23.9595613,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>蒲公英傳奇</name>
+        <name>蒲公英傳奇 素食餐廳</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
             120.9706006,23.9626941,0
-          </coordinates>
-        </Point>
-      </Placemark>
-      <Placemark>
-        <name>素得福素食包子饅頭</name>
-        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
-        <Point>
-          <coordinates>
-            120.9706394,23.9628113,0
           </coordinates>
         </Point>
       </Placemark>
@@ -346,11 +257,11 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>素食早餐店</name>
+        <name>埔里詹媽媽素食早餐</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
           <coordinates>
-            120.9669467,23.9630377,0
+            120.9563056011859,23.970145933078754,0 
           </coordinates>
         </Point>
       </Placemark>
@@ -360,6 +271,213 @@
         <Point>
           <coordinates>
             120.9718818,23.9665532,0
+          </coordinates>
+        </Point>
+      </Placemark>
+       <Placemark>
+        <name>無所從來蔬食文創館</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.9529171300103,23.969328165119613,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>暘明素食餐廳</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+             120.94638905330555 ,23.96510891325646,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>陳味素食滷味</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96557318187347,23.964826684359565,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>阿深越南蔬食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+             120.963556160849,23.97302253124098,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>菩提素食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96441446766794,23.965061979096276,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>蓬萊蔬食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96518694380494,23.959924613000457,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>佳和素食館</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96492945175928,23.96031678556865,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>源豪素食館</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96462904437266,23.964003149398756,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>榞味館素食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97179590631063,23.964512957375838,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>紅鶴林素食中西餐館</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96261202334817,23.9669443215274,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>豪里由素食炸物滷味專賣店</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.9674614568751,23.965610998478294,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>蓮心圓素食海苔飯捲</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96162497050643,23.968395275055897,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>樂川茶食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97475706483593,23.96525805771544,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>桂和園蔬食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97673117051944,23.96153251294911,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>本味屋素麵</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96407114494035,23.964120797572434,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>田都蔬食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97617327108716,23.971924553283554,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>佶芙素食烘焙坊</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96372782221279,23.972316689342364,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>素食山當歸湯</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96424280630413,23.960120699433656,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>素食的路 全素麵線糊</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97072302278698,23.964003149398756,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>綠光森林蔬食坊</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97007929267279,23.96933642536721,0  
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>吐司一品 蔬食</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.98406862205594,23.976638771965938,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>華嚴素食館</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96269785403008,23.96847370451102,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>張素食早點</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.97441374210837,23.967532547899584,0  
           </coordinates>
         </Point>
       </Placemark>
