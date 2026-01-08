@@ -38,7 +38,7 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 def get_distance(lat1, lon1, lat2, lon2):
     """
     計算球面兩點間的距離
-    $$d = 2R \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos\phi_1\cos\phi_2\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
+    r$$d = 2R \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos\phi_1\cos\phi_2\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
     """
     R = 6371  # 地球半徑 (km)
     phi1, phi2 = math.radians(float(lat1)), math.radians(float(lat2))
@@ -203,4 +203,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     # host 必須設定為 0.0.0.0 才能讓外部存取
     app.run(host='0.0.0.0', port=port)
+
 
