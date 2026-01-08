@@ -16,7 +16,10 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, LocationMessageContent
 
 app = Flask(__name__)
-
+@app.route("/", methods=['GET'])
+def index():
+    return "Food Bot is running!", 200
+    
 # --- 1. 配置區 ---
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
@@ -211,3 +214,4 @@ def handle_location(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
