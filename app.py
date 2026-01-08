@@ -199,4 +199,8 @@ def handle_postback(event):
             ))
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    # Render 會透過環境變數指定 PORT，若本地執行則預設為 5000
+    port = int(os.environ.get("PORT", 5000))
+    # host 必須設定為 0.0.0.0 才能讓外部存取
+    app.run(host='0.0.0.0', port=port)
+
