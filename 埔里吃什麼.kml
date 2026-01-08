@@ -539,6 +539,15 @@
         </Point>
       </Placemark>
       <Placemark>
+        <name>承星雞肉飯</name>
+        <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            120.96950717613804,23.967756851871016,0 
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
         <name>蔡媽媽美味屋</name>
         <styleUrl>#icon-1899-DB4436-labelson-nodesc</styleUrl>
         <Point>
