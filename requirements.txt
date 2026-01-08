@@ -4,4 +4,6 @@ jieba
 lxml
 pandas
 google-genai
+selenium==4.10.0
+
 
