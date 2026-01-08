@@ -41,40 +41,46 @@ def get_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     return R * c
 
-# --- 3. 資料庫讀取 (支援 KML/KMZ) ---
+# --- 3. 資料庫讀取邏輯 ---
 def load_food_data(file_path):
     food_db = {}
-    if not os.path.exists(file_path): return {}
-    
     try:
+        if not os.path.exists(file_path):
+            return {}
         if zipfile.is_zipfile(file_path):
             with zipfile.ZipFile(file_path, 'r') as z:
-                kml_filename = next((f for f in z.namelist() if f.endswith('.kml')), 'doc.kml')
-                kml_content = z.read(kml_filename)
+                kml_content = z.read('doc.kml')
         else:
-            with open(file_path, 'rb') as f: kml_content = f.read()
+            with open(file_path, 'rb') as f:
+                kml_content = f.read()
 
-        root = etree.fromstring(kml_content, parser=etree.XMLParser(recover=True))
-        for folder in root.xpath(".//*[local-name()='Folder']"):
-            cat = folder.xpath("./*[local-name()='name']/text()")[0] if folder.xpath("./*[local-name()='name']") else "其他"
+        parser = etree.XMLParser(recover=True)
+        root = etree.fromstring(kml_content, parser=parser)
+        folders = root.xpath(".//*[local-name()='Folder']")
+        
+        for folder in folders:
+            cat_name = folder.xpath("./*[local-name()='name']/text()")
+            cat_name = cat_name[0] if cat_name else "其他"
+            p_in_folder = folder.xpath(".//*[local-name()='Placemark']")
             stores = []
-            for p in folder.xpath(".//*[local-name()='Placemark']"):
+            for p in p_in_folder:
                 name = p.xpath("./*[local-name()='name']/text()")
-                coords = p.xpath(".//*[local-name()='coordinates']/text()")
                 desc = p.xpath("./*[local-name()='description']/text()")
+                coords = p.xpath(".//*[local-name()='coordinates']/text()")
                 if name and coords:
-                    lng, lat, _ = coords[0].strip().split(',')
+                    parts = coords[0].strip().split(',')
                     stores.append({
                         "name": str(name[0]),
-                        # 如果 desc 為空清單，則存入 "暫無描述"
-                        "description": str(desc[0]) if desc else "埔里在地美食", 
+                        "description": str(desc[0]) if desc else "埔里美食",
                         "lng": float(parts[0]),
                         "lat": float(parts[1])
                     })
-            if stores: food_db[cat] = stores
+            if stores:
+                food_db[cat_name] = stores
         return food_db
     except Exception as e:
-        print(f"Read Error: {e}"); return {}
+        print(f"❌ 讀取失敗: {e}")
+        return {}
 
 FOOD_DATABASE = load_food_data('埔里吃什麼.kml')
 
@@ -210,6 +216,7 @@ def handle_location(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
 
