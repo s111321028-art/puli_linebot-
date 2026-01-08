@@ -61,13 +61,15 @@ def load_food_data(file_path):
             for p in folder.xpath(".//*[local-name()='Placemark']"):
                 name = p.xpath("./*[local-name()='name']/text()")
                 coords = p.xpath(".//*[local-name()='coordinates']/text()")
+                desc = p.xpath("./*[local-name()='description']/text()")
                 if name and coords:
                     lng, lat, _ = coords[0].strip().split(',')
                     stores.append({
                         "name": str(name[0]),
-                        "lat": float(lat), "lng": float(lng),
-                        "rating": "N/A", # 這裡未來可以對接爬蟲數據
-                        "review": "暫無評論"
+                        # 如果 desc 為空清單，則存入 "暫無描述"
+                        "description": str(desc[0]) if desc else "埔里在地美食", 
+                        "lng": float(parts[0]),
+                        "lat": float(parts[1])
                     })
             if stores: food_db[cat] = stores
         return food_db
@@ -147,9 +149,17 @@ def handle_text(event):
             if found_store: break
 
         if found_store:
-            reply_text = f"🏠 店名：{found_store['name']}\n📝 描述：{found_store['description']}"
-            # 修正 Google Maps 連結格式
-            reply_text += f"\n\n🗺️ 地圖導航：\nhttps://www.google.com/maps?q={found_store['lat']},{found_store['lng']}"
+            # 使用 .get(key, default) 確保安全
+            store_name = found_store.get('name', '未知店名')
+            store_desc = found_store.get('description', '目前暫無描述') # 沒找到就顯示這句話
+            
+            reply_text = f"🏠 店名：{store_name}\n📝 描述：{store_desc}"
+            
+            # 地圖連結也建議安全存取
+            lat = found_store.get('lat')
+            lng = found_store.get('lng')
+            if lat and lng:
+                reply_text += f"\n\n🗺️ 地圖導航：\nhttps://www.google.com/maps?q={lat},{lng}"
         else:
             reply_text = f"抱歉，找不到關於「{user_msg}」的資訊。試試輸入「你好」開啟選單！"
 
@@ -200,5 +210,6 @@ def handle_location(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
 
 
